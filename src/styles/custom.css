@@ -1,27 +1,118 @@
-/* patch-it brand on top of Starlight. Accent is a placeholder (orange) until the brand color is final. */
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+/* patch-it brand on top of Starlight. Colors are the patch-it design system tokens (patch-it-brand),
+   the same ones patch-it.dev uses. Dark is the default; light follows the Light theme tokens.
+   Custom CSS sits outside Starlight's cascade layers, so each theme is scoped explicitly. */
 
 :root {
-  --sl-font: 'IBM Plex Sans', system-ui, sans-serif;
-  --sl-font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --sl-font: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --sl-font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  --pi-add: #3fb950;
+  --pi-remove: #f47067;
+  --pi-warn: #d4a72c;
 }
 
-/* Dark mode (default). Scoped so it never leaks into light mode:
-   custom CSS sits outside Starlight's cascade layers and would otherwise win. */
+/* Dark (default) */
 :root:not([data-theme='light']) {
-  --sl-color-accent-low: #3a2116;
-  --sl-color-accent: #ff6b2c;
-  --sl-color-accent-high: #ffb08a;
-  --sl-color-black: #0b0d11;
-  --sl-color-gray-6: #12161c;
-  --sl-color-gray-5: #2a313b;
+  --sl-color-white: #f3f4f6;      /* headings */
+  --sl-color-gray-1: #e9ebee;     /* ink */
+  --sl-color-gray-2: #c5cad1;     /* body copy */
+  --sl-color-gray-3: #9ba3ad;     /* ink-muted */
+  --sl-color-gray-4: #868f9b;     /* ink-subtle */
+  --sl-color-gray-5: #2a313b;     /* border */
+  --sl-color-gray-6: #12161c;     /* surface */
+  --sl-color-black: #0b0d11;      /* bg */
+  --sl-color-accent-low: #161d3d; /* accent-tint */
+  --sl-color-accent: #6f86ff;     /* accent */
+  --sl-color-accent-high: #8a9cff;/* accent-text */
+  --sl-color-bg-nav: #0b0d11;
+  --sl-color-bg-sidebar: #0b0d11;
+  --sl-color-hairline-light: #2a313b;
+  --sl-color-hairline: #2a313b;
+  --sl-color-hairline-shade: #0b0d11;
 }
 
-/* Light mode */
+/* Light */
 :root[data-theme='light'] {
-  --sl-color-accent-low: #ffe2d4;
-  --sl-color-accent: #c2410c;
-  --sl-color-accent-high: #7c2d12;
+  --sl-color-white: #15171c;
+  --sl-color-gray-1: #15171c;
+  --sl-color-gray-2: #2b2f36;
+  --sl-color-gray-3: #565c66;
+  --sl-color-gray-4: #61676f;
+  --sl-color-gray-5: #d9d6cc;
+  --sl-color-gray-6: #eceae3;
+  --sl-color-gray-7: #f4f3ee;
+  --sl-color-black: #ffffff;
+  --sl-color-accent-low: #e7ebff;
+  --sl-color-accent: #3f5bf0;
+  --sl-color-accent-high: #3651db;
+  --sl-color-bg-nav: #f4f3ee;
+  --sl-color-bg-sidebar: #f4f3ee;
+  --pi-add: #16702e;
+  --pi-remove: #c4232c;
+  --pi-warn: #8a5d00;
 }
 
-.site-title { font-family: var(--sl-font-mono); font-weight: 700; }
+/* Header: the wordmark, then a small "docs" tag. */
+.site-title { gap: 10px; }
+.site-title img { height: 24px; width: auto; }
+.site-title::after {
+  content: 'docs';
+  font-family: var(--sl-font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--sl-color-gray-3);
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 999px;
+  padding: 1px 9px;
+}
+
+/* Headings and type: same scale as patch-it.dev. */
+.sl-markdown-content h1, .sl-markdown-content h2, .sl-markdown-content h3, h1#_top {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.sl-markdown-content :not(pre) > code {
+  border-radius: 6px;
+  padding: 0.1em 0.35em;
+}
+
+/* Buttons and cards: pill buttons, flat cards with hairline borders (no shadows, no gradients). */
+.sl-link-button { border-radius: 999px; font-weight: 600; }
+.card { border-radius: 14px; background: var(--sl-color-gray-6); border-color: var(--sl-color-gray-5); }
+:root[data-theme='light'] .card { background: #ffffff; }
+.card .icon { border-radius: 10px; }
+
+/* Sidebar: the current page gets the accent tint, not a solid fill. */
+.sidebar-content a[aria-current='page'],
+.sidebar-content a[aria-current='page']:hover,
+.sidebar-content a[aria-current='page']:focus {
+  background: var(--sl-color-accent-low);
+  color: var(--sl-color-accent-high);
+  font-weight: 600;
+}
+
+/* Callouts follow the diff/status colors: tip = add, caution = warn, danger = remove. */
+.starlight-aside--tip { --sl-color-asides-text-accent: var(--pi-add); }
+.starlight-aside--caution { --sl-color-asides-text-accent: var(--pi-warn); }
+.starlight-aside--danger { --sl-color-asides-text-accent: var(--pi-remove); }
+
+/* Splash home: Patchy as the hero. */
+.hero { padding-block: 3rem; }
+.hero img { max-width: 220px; }
+.hero h1 { font-weight: 600; letter-spacing: -0.02em; }
+
+:focus-visible { outline: 2px solid var(--sl-color-accent); outline-offset: 2px; }
+
+/* Note callouts use the accent tint, not Starlight's saturated blue. */
+.starlight-aside--note {
+  --sl-color-asides-text-accent: var(--sl-color-accent-high);
+  --sl-color-asides-border: var(--sl-color-accent);
+  background-color: var(--sl-color-accent-low);
+}
+
+/* Card icons stay neutral: blue is for one thing per screen (the primary button). */
+.card {
+  --sl-card-border: var(--sl-color-gray-4);
+  --sl-card-bg: var(--sl-color-gray-5);
+}
+.card .icon { color: var(--sl-color-gray-1); }

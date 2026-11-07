@@ -32,6 +32,21 @@ Use `:::note`, `:::tip`, `:::caution` and `:::danger` for callouts.
 
 Keep internal details out of here: internal APIs, architecture and runbooks belong in the private `developer-handbook` repo.
 
+## The look
+
+The docs wear the patch-it brand (the `patch-it-brand` repo), the same as patch-it.dev:
+
+| What | Where |
+|---|---|
+| Colors (Dark default, Light) mapped onto Starlight's variables | `src/styles/custom.css` |
+| Wordmark in the header, with a "docs" tag | `src/assets/wordmark-plain-on-*.svg` |
+| Patchy on the home page | `src/assets/bot-on-*.svg` |
+| Code-block colors: the same themes as the CLI and editor | `src/themes/patch-it-*.json` |
+| Favicons, app icons, social image | `public/` |
+| IBM Plex Sans and Mono, self-hosted | `@fontsource/*` in `astro.config.mjs` |
+
+When the brand changes, copy the new files over from `patch-it-brand`. Don't restyle the docs by hand.
+
 ## Run locally
 
 ```sh
