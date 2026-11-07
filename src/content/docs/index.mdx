@@ -1,0 +1,31 @@
+---
+title: patch-it docs
+description: Third-party API changes, fixed as pull requests in your own repo.
+template: splash
+hero:
+  tagline: When an API your app relies on changes, patch-it finds the exact lines it will break and opens a pull request with the fix.
+  actions:
+    - text: Quickstart
+      link: /get-started/quickstart/
+      icon: right-arrow
+    - text: How it works
+      link: /get-started/how-it-works/
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <Card title="Get started" icon="rocket">
+    Add the GitHub Action to a repo in a few minutes. [Quickstart →](/get-started/quickstart/)
+  </Card>
+  <Card title="Supported APIs" icon="list-format">
+    Stripe, OpenAI and Anthropic today. [See coverage →](/supported-apis/overview/)
+  </Card>
+  <Card title="Configuration" icon="setting">
+    Every option for the config file and the Action. [Reference →](/configuration/config-file/)
+  </Card>
+  <Card title="Change feed API" icon="seti:json">
+    The public feed of breaking changes we track. [API reference →](/api-reference/overview/)
+  </Card>
+</CardGrid>
