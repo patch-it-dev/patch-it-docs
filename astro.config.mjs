@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import { ExpressiveCodeTheme } from '@astrojs/starlight/expressive-code';
+import { sidebar } from './src/sidebar.mjs';
 
 // Code blocks use the same syntax themes as the CLI and editor (patch-it-brand/terminal/).
 const theme = (file) => ExpressiveCodeTheme.fromJSONString(readFileSync(new URL(file, import.meta.url), 'utf-8'));
@@ -47,21 +48,7 @@ export default defineConfig({
         '@fontsource/ibm-plex-mono/500.css',
         './src/styles/custom.css',
       ],
-      sidebar: [
-        {
-          label: 'Get started',
-          items: [
-            { slug: 'get-started/introduction' },
-            { slug: 'get-started/quickstart' },
-            { slug: 'get-started/how-it-works' },
-          ],
-        },
-        { label: 'Guides', items: [{ autogenerate: { directory: 'guides' } }] },
-        { label: 'Configuration', items: [{ autogenerate: { directory: 'configuration' } }] },
-        { label: 'Supported APIs', items: [{ autogenerate: { directory: 'supported-apis' } }] },
-        { label: 'API reference', items: [{ autogenerate: { directory: 'api-reference' } }] },
-        { label: 'Resources', items: [{ autogenerate: { directory: 'resources' } }] },
-      ],
+      sidebar,
     }),
   ],
 });
