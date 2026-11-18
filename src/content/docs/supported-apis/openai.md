@@ -2,7 +2,7 @@
 title: OpenAI
 description: How patch-it tracks OpenAI changes.
 sidebar:
-  order: 3
+  order: 4
 ---
 
 We read OpenAI's deprecations and migration pages.

@@ -2,7 +2,7 @@
 title: Request an API
 description: Ask us to support a provider we don't cover yet.
 sidebar:
-  order: 5
+  order: 6
 ---
 
 Tell us which provider you need and why. We prioritize by requests.
