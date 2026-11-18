@@ -1,0 +1,176 @@
+# Automatic Claude review of pull requests, built around how these docs work:
+# the docs describe what the CLI and the GitHub Action actually do, every link
+# resolves, nothing internal lands in a public repo, and the pages sound like
+# patch-it. It ends with a clear verdict.
+#
+# Runs once per PR: when it's opened (not as a draft), marked ready, or reopened.
+# New pushes don't re-run it, to save Claude usage. For a fresh review after
+# changes, a maintainer comments `@claude review` (claude.yml).
+#
+# Pull requests from forks: GitHub gives their runs no secrets, so this
+# workflow only runs for branches in this repository. On a fork's PR a
+# maintainer comments `@claude review` instead; claude.yml reviews it read-only
+# and never runs the fork's code. This workflow never uses `pull_request_target`.
+#
+# Auth: CLAUDE_CODE_OAUTH_TOKEN, a Claude subscription token from
+# `claude setup-token`. Until it's available the job skips with a notice.
+#
+# Note: a PR that edits this file can't run it. The action refuses to run a
+# workflow that differs from the one on main, so changes here only take effect
+# after they merge.
+name: Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, reopened]
+
+# One review per PR at a time; a newer trigger cancels the run it supersedes.
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    # Drafts are work in progress; review them once they're marked ready.
+    # Only branches in this repository: a fork's run gets no secrets.
+    if: >-
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: write # the review comment and inline comments
+      issues: write # PR comments go through the issues API
+      id-token: write # the action authenticates as the Claude GitHub App
+    env:
+      # Skip quietly instead of failing red until the secret is available.
+      HAS_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+    steps:
+      - name: Skip (CLAUDE_CODE_OAUTH_TOKEN not set)
+        if: env.HAS_TOKEN != 'true'
+        run: echo "::notice::CLAUDE_CODE_OAUTH_TOKEN is not set; skipping Claude review."
+
+      - uses: actions/checkout@v6
+        if: env.HAS_TOKEN == 'true'
+        with:
+          fetch-depth: 1
+
+      # Node, so Claude can verify the site builds instead of only reading.
+      - uses: actions/setup-node@v6
+        if: env.HAS_TOKEN == 'true'
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: anthropics/claude-code-action@v1
+        id: claude
+        if: env.HAS_TOKEN == 'true'
+        env:
+          # Any sub-agent Claude starts at the Opus tier also runs Opus 5.5.
+          ANTHROPIC_DEFAULT_OPUS_MODEL: claude-opus-5-5
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # The action creates the review comment itself and Claude fills it in,
+          # so a review can never end in silence. Sticky: one comment per PR.
+          track_progress: true
+          use_sticky_comment: true
+          # Public repo: the run summary is public, so don't print Claude's report there.
+          display_report: false
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            Review this pull request to patch-it's public docs (docs.patch-it.dev, Astro
+            Starlight). Read README.md first: it says where pages live, how the plugin list
+            and llms.txt are generated, and what stays out of this repo.
+
+            HOW TO RUN COMMANDS: one plain command per Bash call. Pipes (|), redirects
+            (>), `&&`, `;` and `$(...)` are blocked and will waste a turn. Read files
+            with the Read tool, and search with Grep/Glob, never with cat, grep or find.
+
+            1. THE CHANGE. Read the PR title and body with `gh pr view <PR NUMBER>`, and
+               any issue it references with `gh issue view <number>`. Read the diff with
+               `gh pr diff <PR NUMBER>`, and changed pages in full.
+            2. MATCHES THE PRODUCT. The patch-it CLI and GitHub Action are the reference:
+               their README and docs say what a command, flag, Action input, config key,
+               exit code or API field does. You can't read that repo from here, so:
+               - check the change agrees with the rest of these docs (configuration/,
+                 guides/cli.md, guides/github-action.md, api-reference/), and flag every
+                 contradiction;
+               - for each behavior the PR describes (a new input, flag, default, exit code,
+                 endpoint or field), the PR body should link the client change or release
+                 it documents. If it doesn't, list those claims under "Needs a maintainer
+                 to confirm" instead of guessing;
+               - don't document what isn't shipped: "coming soon" stays a
+                 `:::note[Coming soon]` aside, not a described feature.
+            3. LINKS RESOLVE. Every link in a changed page: site links like
+               `/guides/cli/` must match a page under src/content/docs/ (guides/cli.md or
+               .mdx), and a `#anchor` must match a heading on that page. Relative links and
+               images must point at real files. List external links you couldn't check.
+            4. NOTHING INTERNAL. This repo is public. Flag credentials, tokens, keys,
+               internal hostnames, internal APIs or services, architecture or runbook
+               details, links to private repos, dashboards or tickets, customer or user
+               names, unsourced numbers, prices, roadmap dates, and links to AI sessions.
+               Internal details belong in the private handbook, not here.
+            5. GENERATED PARTS. The table in supported-apis/plugins.md comes from
+               patch-it-plugins' docs/plugins.md: a hand edit between the plugins markers is
+               blocking. A new page needs the frontmatter (title, description, sidebar
+               order where the folder needs it); llms.txt picks pages up by itself.
+            6. VOICE. Calm, sharp, wry; in docs, clear first, at most a dry aside in an
+               intro, never in steps. Always lowercase "patch-it". Name the real thing
+               (API version, model ID, date, file) and link to the source. No emoji, no
+               exclamation marks, no hype: never "revolutionary", "seamless",
+               "AI-powered", "leverage", "effortless", "magic", "supercharge", "unlock",
+               "empower", "best-in-class", "cutting-edge". Say "fix" (not remediate),
+               "breaking change" (not issue or incident), "pull request" or "PR".
+               Wording notes are non-blocking.
+            7. VERIFY BY RUNNING. Run `npm ci`, then `npm run build`; it must finish
+               without errors. Report what you ran and what happened; don't claim anything
+               you didn't check.
+
+            Your final comment is what the author reads, and it is public. Start with ONE
+            verdict line: "✅ Ready to merge", "⚠️ Merge after fixes" or "❌ Not ready",
+            with a one-sentence reason. Then, concisely:
+            - **Accuracy**: contradictions found, and "Needs a maintainer to confirm"
+            - **Links**: broken links, or "all resolve"
+            - **Public**: anything internal, or "nothing found"
+            - **Verified**: the commands you ran and their results
+            - **Non-blocking**: voice and wording suggestions, clearly marked as such
+            Put each specific problem as an inline comment on its line.
+            Never include a Claude session ID or claude.ai link.
+          # Read-only on GitHub, plus the npm install and build to verify.
+          # No `gh pr comment` and no `gh api`: the action posts the review comment
+          # itself. Default permission mode: anything not listed here is denied.
+          claude_args: >-
+            --model claude-opus-5-5
+            --permission-mode default
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Read,Grep,Glob,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh issue view:*),Bash(npm ci),Bash(npm run build)"
+            --disallowedTools "Edit,Write,MultiEdit,NotebookEdit,WebFetch,WebSearch,Bash(git push:*),Bash(git commit:*)"
+
+      # Diagnostics only: print the number of blocked tool calls and which tools,
+      # so a disappointing review can be fixed instead of guessed at. Public repo:
+      # it doesn't print Claude's message or the tool inputs.
+      - name: Log blocked tool calls
+        if: always() && env.HAS_TOKEN == 'true' && steps.claude.outputs.execution_file != ''
+        continue-on-error: true
+        env:
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+
+          try:
+              data = json.load(open(os.environ["EXECUTION_FILE"]))
+          except Exception as e:
+              print(f"No execution output to read: {e}")
+              raise SystemExit(0)
+
+          messages = data if isinstance(data, list) else [data]
+          result = next((m for m in reversed(messages) if m.get("type") == "result"), {})
+          denials = result.get("permission_denials") or []
+
+          print(f"=== Blocked tool calls: {len(denials)} ===")
+          for d in denials:
+              print(f"BLOCKED {d.get('tool_name')}")
+          PY
