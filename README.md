@@ -32,6 +32,15 @@ Use `:::note`, `:::tip`, `:::caution` and `:::danger` for callouts.
 
 Keep internal details out of here: internal APIs, architecture and runbooks belong in the private `developer-handbook` repo.
 
+## The list of plugins
+
+[Supported APIs → All plugins](src/content/docs/supported-apis/plugins.md) is built from [`docs/plugins.md`](https://github.com/patch-it-dev/patch-it-plugins/blob/main/docs/plugins.md) in the public `patch-it-plugins` repo, the one list of supported plugins. Don't edit the table on this site; change it there.
+
+- `npm run build` first runs `scripts/sync-plugins.mjs` (npm's `prebuild`): it downloads that file from `main` (raw.githubusercontent.com, no token) and copies the table between `<!-- plugins:start -->` and `<!-- plugins:end -->` into the page, between the same markers.
+- **Offline or GitHub down:** it prints a warning and keeps the committed table, so the build never fails on it.
+- **Refresh the committed copy** with `npm run sync-plugins` and commit the page; a build that changed the table leaves it as a diff in your working tree.
+- The site updates when it's rebuilt: a change merged in `patch-it-plugins` shows up on the next docs deploy.
+
 ## llms.txt
 
 The build also writes `/llms.txt` (an index of the docs for AI tools, in the [llmstxt.org](https://llmstxt.org) format) and `/llms-full.txt` (the text of those pages in one file). Both are generated from the pages (`src/pages/llms*.txt.ts`, `src/llms.ts`):

@@ -5,6 +5,8 @@
   "private": true,
   "scripts": {
     "dev": "astro dev",
+    "sync-plugins": "node scripts/sync-plugins.mjs",
+    "prebuild": "node scripts/sync-plugins.mjs",
     "build": "astro build",
     "preview": "astro preview",
     "start": "serve dist -l tcp://0.0.0.0:${PORT:-3000}",

@@ -2,7 +2,7 @@
 title: Stripe
 description: How patch-it tracks Stripe API changes.
 sidebar:
-  order: 2
+  order: 3
 ---
 
 We compare Stripe's OpenAPI spec release to release and read Stripe's changelog.

@@ -14,6 +14,8 @@ sidebar:
 | Runtimes | Building |
 | CI platforms | Next |
 
+Each source is one plugin. [All plugins](/supported-apis/plugins/) lists every one: what it watches and where it reads it.
+
 ## What counts as a change
 
 | Type | Meaning |

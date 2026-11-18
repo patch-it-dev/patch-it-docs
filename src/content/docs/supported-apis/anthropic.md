@@ -2,7 +2,7 @@
 title: Anthropic
 description: How patch-it tracks Anthropic changes.
 sidebar:
-  order: 4
+  order: 5
 ---
 
 We read Anthropic's model deprecations page and SDK migration guides.
