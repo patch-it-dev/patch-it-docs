@@ -41,6 +41,14 @@ Keep internal details out of here: internal APIs, architecture and runbooks belo
 - **Refresh the committed copy** with `npm run sync-plugins` and commit the page; a build that changed the table leaves it as a diff in your working tree.
 - The site updates when it's rebuilt: a change merged in `patch-it-plugins` shows up on the next docs deploy.
 
+## llms.txt
+
+The build also writes `/llms.txt` (an index of the docs for AI tools, in the [llmstxt.org](https://llmstxt.org) format) and `/llms-full.txt` (the text of those pages in one file). Both are generated from the pages (`src/pages/llms*.txt.ts`, `src/llms.ts`):
+
+- Summary and details come from the first paragraph and the rest of `get-started/introduction.md`.
+- Sections follow the sidebar (`src/sidebar.mjs`), pages in sidebar order.
+- **Stubs are left out**: a page is listed once it has at least 30 words besides the `:::note[Coming soon]` aside. Write the page and it shows up; there is no list to update.
+
 ## The look
 
 The docs wear the patch-it brand (the `patch-it-brand` repo), the same as patch-it.dev:
