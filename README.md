@@ -73,6 +73,10 @@ npm run build    # static site in dist/
 npm start        # serves dist/ on $PORT (what Railway runs)
 ```
 
+## Reviews
+
+Claude reviews each pull request once, when it's opened or marked ready (`.github/workflows/claude-code-review.yml`): the docs match what the CLI and the Action do, links resolve, nothing internal, the voice. PRs from forks get no secrets, so for those a maintainer comments `@claude review` and Claude reviews it read-only (it never runs a fork's code). Only maintainers can call `@claude` (`claude.yml`). Claude's review helps; a maintainer still decides.
+
 ## Deploy (Railway)
 
 - **Build command:** `npm run build`
