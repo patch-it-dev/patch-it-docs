@@ -1,60 +1,102 @@
-// Copies the list of supported plugins from patch-it-plugins into the "All plugins" page.
+// Renders the list of providers and sources patch-it watches into the "All plugins" page.
 //
-// The source of truth is docs/plugins.md on patch-it-plugins' main branch (a public repo, so no
-// token). Its table sits between <!-- plugins:start --> and <!-- plugins:end -->; this script
-// puts that table between the same markers in src/content/docs/supported-apis/plugins.md.
+// The only list is the plugin registry in patch-it-plugins' code. Each release of that public
+// repo carries it as an asset, plugins.json (printed by `go run ./cmd/list-plugins`), so this
+// script reads the latest release's copy: no token, no committed list anywhere. It groups the
+// providers by category and writes them between <!-- plugins:start --> and <!-- plugins:end -->
+// in src/content/docs/supported-apis/plugins.md.
 //
-// Runs before every build (npm's "prebuild"). If GitHub can't be reached, or the file has no
-// table, it leaves the committed page alone: that copy is the fallback, so the build never fails
-// offline. Run `npm run sync-plugins` and commit the page to refresh the fallback.
+// Runs before every build and dev server (npm's "prebuild" and "predev"). If GitHub can't be
+// reached, or the asset is missing or malformed, it writes a short "temporarily unavailable"
+// note instead, never an old copy, and the build goes on. The committed page holds that note:
+// don't commit a rendered list.
 import { readFileSync, writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
-// PLUGINS_LIST_URL overrides it, e.g. to preview a patch-it-plugins branch.
-const SOURCE = process.env.PLUGINS_LIST_URL || 'https://raw.githubusercontent.com/patch-it-dev/patch-it-plugins/main/docs/plugins.md';
+// PLUGINS_JSON_URL overrides it, e.g. a file:// path or another release's asset to preview.
+const SOURCE =
+  process.env.PLUGINS_JSON_URL ||
+  'https://github.com/patch-it-dev/patch-it-plugins/releases/latest/download/plugins.json';
 const PAGE = new URL('../src/content/docs/supported-apis/plugins.md', import.meta.url);
 const START = '<!-- plugins:start -->';
 const END = '<!-- plugins:end -->';
 
-/** The table between the markers: only Markdown table rows, so nothing else can reach the page. */
-export function extractTable(markdown) {
-  const start = markdown.indexOf(START);
-  const end = markdown.indexOf(END, start);
-  if (start < 0 || end < 0) return null;
-  const rows = markdown
-    .slice(start + START.length, end)
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line.startsWith('|'));
-  // A header, the |---| line, and at least one plugin.
-  return rows.length >= 3 ? rows.join('\n') : null;
+export const UNAVAILABLE =
+  ':::note\nThe list is temporarily unavailable. It is read from the latest [patch-it-plugins release](https://github.com/patch-it-dev/patch-it-plugins/releases/latest) when these docs are built; it will be back on the next build.\n:::';
+
+// How a category id reads as a heading; any other id is capitalized.
+const TITLES = { ai: 'AI', crm: 'CRM', devtools: 'Developer tools' };
+
+export function title(category) {
+  return TITLES[category] || category.charAt(0).toUpperCase() + category.slice(1);
 }
 
-export function replaceTable(page, table) {
+/** A table cell: one line, no pipe that would split it. */
+function cell(text) {
+  return String(text ?? '').replace(/\s+/g, ' ').replace(/\|/g, '\\|').trim();
+}
+
+function host(url) {
+  try {
+    const u = new URL(url);
+    return u.hostname + (u.pathname === '/' ? '' : u.pathname);
+  } catch {
+    return url;
+  }
+}
+
+/** Markdown for a plugins.json document: one section per category, in the list's order. */
+export function render(list) {
+  if (!list || !Array.isArray(list.providers) || list.providers.length === 0) {
+    throw new Error('no providers in the list');
+  }
+  const order = Array.isArray(list.categories) ? [...list.categories] : [];
+  for (const p of list.providers) if (!order.includes(p.category)) order.push(p.category);
+  const sections = [];
+  for (const category of order) {
+    const providers = list.providers.filter((p) => p.category === category);
+    if (providers.length === 0) continue;
+    const rows = ['| Provider | Source | Layer | What it watches | Reads |', '|---|---|---|---|---|'];
+    for (const p of providers) {
+      for (const s of p.sources || []) {
+        const reads = (s.urls || []).slice(0, 1).map((u) => `[${cell(host(u))}](${u})`).join('');
+        rows.push(
+          `| [${cell(p.name)}](${p.homepage}) | [\`${cell(s.id)}\`](${s.page}) | ${cell(s.layer)} | ${cell(s.watches)} | ${reads} |`,
+        );
+      }
+    }
+    sections.push(`### ${title(category)}\n\n${rows.join('\n')}`);
+  }
+  const version = list.version ? ` (${cell(list.version)})` : '';
+  const counts = `${list.provider_count ?? list.providers.length} providers, ${list.source_count ?? ''} sources`.replace(', ,', ',');
+  return `${sections.join('\n\n')}\n\n<small>${counts}, from patch-it-plugins${version}.</small>`;
+}
+
+export function replaceBetweenMarkers(page, body) {
   const start = page.indexOf(START);
   const end = page.indexOf(END, start);
   if (start < 0 || end < 0) throw new Error(`${PAGE.pathname} lost its ${START} / ${END} markers`);
-  return `${page.slice(0, start + START.length)}\n${table}\n${page.slice(end)}`;
+  return `${page.slice(0, start + START.length)}\n${body}\n${page.slice(end)}`;
+}
+
+async function load(source) {
+  if (source.startsWith('file:')) return JSON.parse(readFileSync(new URL(source), 'utf-8'));
+  const res = await fetch(source, { signal: AbortSignal.timeout(10_000), redirect: 'follow' });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
 }
 
 async function main() {
-  let table = null;
+  let body = UNAVAILABLE;
   try {
-    const res = await fetch(SOURCE, { signal: AbortSignal.timeout(10_000) });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    table = extractTable(await res.text());
-    if (!table) throw new Error('no plugin table between the markers');
+    body = render(await load(SOURCE));
   } catch (err) {
-    console.warn(`sync-plugins: kept the committed plugin list (${SOURCE}: ${err.message})`);
-    return;
+    console.warn(`sync-plugins: the list is unavailable (${SOURCE}: ${err.message}); the page says so`);
   }
   const page = readFileSync(PAGE, 'utf-8');
-  const next = replaceTable(page, table);
-  if (next === page) {
-    console.log('sync-plugins: plugin list is up to date');
-    return;
-  }
-  writeFileSync(PAGE, next);
-  console.log(`sync-plugins: updated the plugin list from ${SOURCE} (${table.split('\n').length - 2} plugins)`);
+  const next = replaceBetweenMarkers(page, body);
+  if (next !== page) writeFileSync(PAGE, next);
+  if (body !== UNAVAILABLE) console.log(`sync-plugins: rendered the list from ${SOURCE}`);
 }
 
-await main();
+if (process.argv[1] === fileURLToPath(import.meta.url)) await main();

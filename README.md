@@ -34,12 +34,13 @@ Keep internal details out of here: internal APIs, architecture and runbooks belo
 
 ## The list of plugins
 
-[Supported APIs → All plugins](src/content/docs/supported-apis/plugins.md) is built from [`docs/plugins.md`](https://github.com/patch-it-dev/patch-it-plugins/blob/main/docs/plugins.md) in the public `patch-it-plugins` repo, the one list of supported plugins. Don't edit the table on this site; change it there.
+[Supported APIs → All plugins](src/content/docs/supported-apis/plugins.md) shows every provider and source patch-it watches, grouped by category. The only list is the plugin registry in the public `patch-it-plugins` code; nothing here or there keeps one by hand. Each `patch-it-plugins` release attaches it as `plugins.json`.
 
-- `npm run build` first runs `scripts/sync-plugins.mjs` (npm's `prebuild`): it downloads that file from `main` (raw.githubusercontent.com, no token) and copies the table between `<!-- plugins:start -->` and `<!-- plugins:end -->` into the page, between the same markers.
-- **Offline or GitHub down:** it prints a warning and keeps the committed table, so the build never fails on it.
-- **Refresh the committed copy** with `npm run sync-plugins` and commit the page; a build that changed the table leaves it as a diff in your working tree.
-- The site updates when it's rebuilt: a change merged in `patch-it-plugins` shows up on the next docs deploy.
+- `npm run build` and `npm run dev` first run `scripts/sync-plugins.mjs` (npm's `prebuild` / `predev`): it downloads `https://github.com/patch-it-dev/patch-it-plugins/releases/latest/download/plugins.json` (no token) and writes the list, one table per category, between `<!-- plugins:start -->` and `<!-- plugins:end -->` in the page.
+- **Offline, GitHub down, or no asset:** it prints a warning and writes "the list is temporarily unavailable" there instead, so the build never fails on it and never shows an old copy.
+- **Don't commit a rendered list.** The committed page holds the "unavailable" note; a local build leaves the rendered list as a diff in your working tree: discard it (`git checkout src/content/docs/supported-apis/plugins.md`).
+- Preview another list with `PLUGINS_JSON_URL=<url or file:///path> npm run sync-plugins`.
+- The site updates when it's rebuilt after a `patch-it-plugins` release.
 
 ## llms.txt
 
