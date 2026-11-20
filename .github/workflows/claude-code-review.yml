@@ -113,9 +113,11 @@ jobs:
                details, links to private repos, dashboards or tickets, customer or user
                names, unsourced numbers, prices, roadmap dates, and links to AI sessions.
                Internal details belong in the private handbook, not here.
-            5. GENERATED PARTS. The table in supported-apis/plugins.md comes from
-               patch-it-plugins' docs/plugins.md: a hand edit between the plugins markers is
-               blocking. A new page needs the frontmatter (title, description, sidebar
+            5. GENERATED PARTS. The list in supported-apis/plugins.md is rendered at
+               build time from patch-it-plugins' latest release (plugins.json); between the
+               plugins markers the committed page holds only the "temporarily unavailable"
+               note. A committed list there, or any hand-kept list of providers elsewhere,
+               is blocking. A new page needs the frontmatter (title, description, sidebar
                order where the folder needs it); llms.txt picks pages up by itself.
             6. VOICE. Calm, sharp, wry; in docs, clear first, at most a dry aside in an
                intro, never in steps. Always lowercase "patch-it". Name the real thing

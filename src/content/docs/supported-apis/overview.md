@@ -14,7 +14,7 @@ sidebar:
 | Runtimes | Building |
 | CI platforms | Next |
 
-Each source is one plugin. [All plugins](/supported-apis/plugins/) lists every one: what it watches and where it reads it.
+Each provider has one or more sources, each read by a plugin. [All plugins](/supported-apis/plugins/) lists them, grouped by category: what each watches and where it reads it.
 
 ## What counts as a change
 
